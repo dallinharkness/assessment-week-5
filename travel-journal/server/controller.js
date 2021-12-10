@@ -1,6 +1,55 @@
+require('dotenv').config()
+const {CONNECTION_STRING} = process.env
+const Sequelize = require('sequelize')
 
+const sequelize = new Sequelize(CONNECTION_STRING, {
+    dialect: 'postgres',
+    dialectOptions: {
+        ssl: {
+            rejectUnauthorized: false
+        }
+    }
+})
 
 module.exports = {
+    getCountries: (req,res) => {
+        sequelize.query(`SELECT * FROM countries;`)
+        .then(dbRes => res.status(200).send(dbRes[0]))
+        .catch(err => console.log(err))
+    },
+
+    createCity: (req,res) => {
+        let {countryId, name, rating} = req.body
+        sequelize.query(`INSERT INTO cities (country_id, name, rating)
+        values ('${countryId}', '${name}', '${rating}')`)
+        .then(dbRes => res.status(200).send(dbRes[0]))
+        .catch(err => console.log(err))
+    },
+
+    getCities: (req,res) =>{
+        sequelize.query(`SELECT c.city_id, c.name, c.rating, cou.country_id, cou.name
+        FROM cities c
+        JOIN countries cou
+        ON c.country_id = cou.country_id;`)
+        .then(dbRes => res.status(200).send(dbRes[0]))
+        .catch(err => console.log(err))
+
+    },
+
+    deleteCity: (req,res) => {
+        const {id} = req.params
+        sequelize.query(`DELETE 
+        FROM cities
+        WHERE city_id = '${id}';`)
+        .then(dbRes => res.status(200).send(dbRes[0]))
+        .catch(err => console.log(err))
+
+    },
+    
+    
+    
+    
+    
     seed: (req, res) => {
         sequelize.query(`
             drop table if exists cities;
@@ -11,7 +60,13 @@ module.exports = {
                 name varchar
             );
 
-            *****YOUR CODE HERE*****
+            CREATE TABLE cities (
+                city_id SERIAL PRIMARY KEY,
+                name VARCHAR (50),
+                rating INT,
+                country_id INT NOT NULL REFERENCES countries(country_id)
+
+            );
 
             insert into countries (name)
             values ('Afghanistan'),
